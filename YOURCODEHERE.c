@@ -84,3 +84,18 @@ void fill(cache * acache, unsigned int index, unsigned int oldestway, unsigned l
     acache->sets[index].blocks[oldestway].datawords[i] = value;
   }
 }
+
+/*
+For this project, I used many print statements to test my code. I began by using the provided debugging print statement for the first function.
+I used the equations in the slides to find the correct values to put into acache. When I printed out the values, they matched the ones provided
+in the Discussion post. From there, I implemented gettag and getindex. I printed the value of the address to confirm that it was not shifted.
+I did the same for the VAI and VAT mask. By printing out the Bitwise OR result of the two, I was able to confirm that the functions were
+working as intended.
+
+For the write and fill functions, I referenced the canvas discussions, where I learned that I can read/write specific datawords in memory by
+referencing them using the index and oldestway (acache->sets[index].blocks[oldestway].datawords[i]). With this information, I printed out the
+address provided in the fill function, and compared it to the address I had crafted in writeback. They were similar enough in value that I
+determined that I'm getting reasonable value for the address in writeback. I was able to run the makefile with no segmentation faults to confirm
+that I am not accessing any illegal locations in memory. From there, it was simple enought to iterate through the block. I shifted my iterator
+"i," by the amount of numBitsByteOffset so that I was accessing data at the word granularity. That allowed me to freely load and store each block.
+*/
