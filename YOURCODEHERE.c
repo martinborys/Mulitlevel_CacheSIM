@@ -66,11 +66,11 @@ void writeback(cache* acache, unsigned int index, unsigned int oldestway){
   int numBitsByteOffset = 3;
   int words = acache->blocksize/8;
   unsigned long long address;
-  int tag = (acache->sets[index].blocks[oldestway].tag) << (acache->numBitsForIndex + acache->numBitsForBlockOffset + numBitsByteOffset);
+  unsigned long long tag = (acache->sets[index].blocks[oldestway].tag) << (acache->numBitsForIndex + acache->numBitsForBlockOffset + numBitsByteOffset);
   address = tag | (index << (acache->numBitsForBlockOffset + numBitsByteOffset));
   for(int i = 0; i < words; i++){
-    unsigned long long value = acache->sets[index].blocks[oldestway].datawords[(address&((unsigned long long)(acache->blocksize)-1))>>3];
-    StoreWord(acache->nextcache, address + (i << numBitsByteOffset), value);
+    unsigned long long value = acache->sets[index].blocks[oldestway].datawords[i];
+    StoreWord(acache->nextcache, address | (i << numBitsByteOffset), value);
   }
 }
 
@@ -78,16 +78,11 @@ void fill(cache * acache, unsigned int index, unsigned int oldestway, unsigned l
 
   // YOUR CODE GOES HERE
   int numBitsByteOffset = 3;
-  int wordSize = 8;
-  int numBlockBits = acache->numBitsForBlockOffset;
-  int words = acache->blocksize/wordSize;
-  unsigned long long value;
-  unsigned long long startAddress;
-  startAddress = address >> (numBlockBits + numBitsByteOffset);
-  startAddress = startAddress << (numBlockBits + numBitsByteOffset);
+  int words = acache->blocksize/8;
+  unsigned long long startAddress = address >> (acache->numBitsForBlockOffset + numBitsByteOffset);
+  startAddress = startAddress << (acache->numBitsForBlockOffset + numBitsByteOffset);
   for(int i = 0; i < words; i++){
-    value = LoadWord(acache->nextcache, startAddress + (i << numBitsByteOffset));
-    printf("VALUE: %lu\n", value);
-    //StoreWord(acache, value, startAddress + (i << numBitsByteOffset));
+    unsigned long long value = LoadWord(acache->nextcache, startAddress + (i << numBitsByteOffset));
+    acache->sets[index].blocks[oldestway].datawords[i] = value;
   }
 }
