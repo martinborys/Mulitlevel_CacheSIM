@@ -26,37 +26,35 @@ void  setSizesOffsetsAndMaskFields(cache* acache, unsigned int size, unsigned in
   // YOUR CODE GOES HERE
   int byteOffset = 3;
   int addressSize = 64;
-  acache->numways = assoc;
+  acache->numways = assoc; // numways is the same as set association
   acache->blocksize = blocksize;
-  acache->numsets = (size/blocksize)/assoc;
-  acache->numBitsForBlockOffset = lg2pow2(blocksize) - byteOffset;
-  acache->numBitsForIndex = lg2pow2((size/blocksize)/assoc);
+  acache->numsets = (size/blocksize)/assoc; // # of sets is # of blocks / # of ways
+  acache->numBitsForBlockOffset = lg2pow2(blocksize) - byteOffset; // # of bits for block indexing minus bits for byte offset
+  acache->numBitsForIndex = lg2pow2((size/blocksize)/assoc); 
   acache->VAImask = ((size/blocksize)/assoc)-1;
 
-  int bits = (addressSize - acache->numBitsForBlockOffset - acache->numBitsForIndex - byteOffset);
-  unsigned long long power = 1;
+  int bits = (addressSize - acache->numBitsForBlockOffset - acache->numBitsForIndex - byteOffset); // 2^x function
+  unsigned long long power = 1; // this loop takes input x and returns 2^x like a reverse log
   for(int i=0; i<bits; i++){
     power *= 2;
   }
   power -= 1;
   acache->VATmask = power;
-  //printf("%u %u %u %u %u %llx %llx\n", acache->numways, acache->blocksize, acache->numsets, acache->numBitsForBlockOffset, acache->numBitsForIndex, acache->VAImask, acache->VATmask);
 }
-
 
 unsigned long long getindex(cache* acache, unsigned long long address){
   int byteOffset = 3;
   unsigned long long index;
-  index = (acache->VAImask  << (acache->numBitsForBlockOffset + byteOffset)) & address;
-  index = index >> (acache->numBitsForBlockOffset + byteOffset);
-  return index; //Replace with correct value
+  index = (acache->VAImask  << (acache->numBitsForBlockOffset + byteOffset)) & address; // shift mask by # of bits for block and byte offset
+  index = index >> (acache->numBitsForBlockOffset + byteOffset); // shift back by same amount
+  return index;
 }
 
 unsigned long long gettag(cache* acache, unsigned long long address){
   int byteOffset = 3;
   unsigned long long tag;
-  tag = (acache->VATmask  << (acache->numBitsForIndex + acache->numBitsForBlockOffset + byteOffset))& address;
-  tag = tag >> (acache->numBitsForIndex + acache->numBitsForBlockOffset + byteOffset);
+  tag = (acache->VATmask  << (acache->numBitsForIndex + acache->numBitsForBlockOffset + byteOffset))& address; // shift mask by # of bits for block and byte offset
+  tag = tag >> (acache->numBitsForIndex + acache->numBitsForBlockOffset + byteOffset); // shift back by same amount
   return tag; //Replace with correct value
 }
 
@@ -64,11 +62,11 @@ void writeback(cache* acache, unsigned int index, unsigned int oldestway){
 
   // YOUR CODE GOES HERE
   int numBitsByteOffset = 3;
-  int words = acache->blocksize/8;
-  unsigned long long address;
-  unsigned long long tag = (acache->sets[index].blocks[oldestway].tag) << (acache->numBitsForIndex + acache->numBitsForBlockOffset + numBitsByteOffset);
-  address = tag | (index << (acache->numBitsForBlockOffset + numBitsByteOffset));
-  for(int i = 0; i < words; i++){
+  int words = acache->blocksize/8; // find # of words based on block size and word size
+  unsigned long long address; // find tag value based on index, oldestway and shift by # bits for index, block offset, byte offset
+  unsigned long long tag = (acache->sets[index].blocks[oldestway].tag) << (acache->numBitsForIndex + acache->numBitsForBlockOffset + numBitsByteOffset); 
+  address = tag | (index << (acache->numBitsForBlockOffset + numBitsByteOffset)); // Bitwise OR address with index shifted by byte and block offset
+  for(int i = 0; i < words; i++){ // set value for each word in block and store
     unsigned long long value = acache->sets[index].blocks[oldestway].datawords[i];
     StoreWord(acache->nextcache, address | (i << numBitsByteOffset), value);
   }
@@ -78,10 +76,10 @@ void fill(cache * acache, unsigned int index, unsigned int oldestway, unsigned l
 
   // YOUR CODE GOES HERE
   int numBitsByteOffset = 3;
-  int words = acache->blocksize/8;
-  unsigned long long startAddress = address >> (acache->numBitsForBlockOffset + numBitsByteOffset);
-  startAddress = startAddress << (acache->numBitsForBlockOffset + numBitsByteOffset);
-  for(int i = 0; i < words; i++){
+  int words = acache->blocksize/8; // find # of words based on block size and word size
+  unsigned long long startAddress = address >> (acache->numBitsForBlockOffset + numBitsByteOffset); // shift address by # of bits for block and byte offset
+  startAddress = startAddress << (acache->numBitsForBlockOffset + numBitsByteOffset); // shift back to obtain address at the start of the block.
+  for(int i = 0; i < words; i++){ // load value for each word in block and store at given index + oldestway
     unsigned long long value = LoadWord(acache->nextcache, startAddress + (i << numBitsByteOffset));
     acache->sets[index].blocks[oldestway].datawords[i] = value;
   }
